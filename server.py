@@ -102,7 +102,7 @@ def handle_client(conn: socket.socket, addr):
                     if password == Shutdown_Password:
                         send_line(connection_stream, "200 OKAY")
                         shutdown_event.set()
-                        break  # break out and stop listening
+                        break  # break out and stop listening as the server will now stop
                     else:
                         send_line(connection_stream, "301 WRONG PASSWORD")
 
