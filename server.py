@@ -7,18 +7,17 @@
 
 import socket
 import threading
-import sys
 from contextlib import closing
 
-Port = 5555
-Host = "127.0.0.1"  # Just use localhost for testing
+SERVER_PORT = 5555
+HOST = "127.0.0.1"  # Just use localhost for testing
 
-Ok_Message = "200 OK"
+OK_MESSAGE = "200 OK"
 
 motd_lock = threading.Lock()  # lock so that multiple clients can't change the motd at the same time
 motd = "An apple a day keeps the doctor away."  # Message of the Day (motd)
 
-Shutdown_Password = "123!abc"
+SHUTDOWN_PASSWORD = "123!abc"
 shutdown_event = threading.Event()
 
 
@@ -50,11 +49,11 @@ def handle_client(conn: socket.socket, addr):
         with conn:
             connection_stream = conn.makefile('rwb', buffering=0)
 
-            # Wrap for text I/O (manual encode/decode via helpers for clarity)
+            # Listen forever (manually break out as needed)
             while not shutdown_event.is_set():
-                line_bytes = connection_stream.readline()
+                line_bytes = connection_stream.readline() # get next command from client
                 if not line_bytes:
-                    break  # client closed
+                    break  # client closed, stop listening
                 try:
                     line = raw_byte_to_string(line_bytes)
                 except UnicodeDecodeError:
@@ -66,12 +65,12 @@ def handle_client(conn: socket.socket, addr):
                 if cmd == 'MSGGET':
                     with motd_lock:
                         current = motd
-                    send_line(connection_stream, Ok_Message + "\n" + current + "\n")
+                    send_line(connection_stream, OK_MESSAGE + "\n" + current + "\n")
 
                 elif cmd == 'MSGSTORE':
-                    # Authorize upload
-                    send_line(connection_stream, Ok_Message)
-                    # Then wait for the client to send us the new MOTD
+                    # Authorize message change
+                    send_line(connection_stream, OK_MESSAGE)
+                    # Then wait for the client to send us the new message
                     new_line_raw = connection_stream.readline()
                     if not new_line_raw:
                         # Client didn't send message, treat this as an error and break out of listening
@@ -80,20 +79,21 @@ def handle_client(conn: socket.socket, addr):
                     new_message = raw_byte_to_string(new_line_raw)
                     show_client_message(new_message)  # print the new message (requirement)
                     if new_message == 'QUIT': # Client unexpectedly quit
-                        send_line(connection_stream, 'QUIT')
+                        send_line(connection_stream, 'Connection terminated')
                         break
 
                     with motd_lock:
                         motd = new_message
-                    send_line(connection_stream, Ok_Message)
+                    send_line(connection_stream, OK_MESSAGE)
 
                 elif cmd == 'QUIT':
-                    send_line(connection_stream, Ok_Message)
+                    send_line(connection_stream, OK_MESSAGE)
                     break  # Stop listening to this client
 
                 elif cmd == 'SHUTDOWN':
                     send_line(connection_stream, "300 PASSWORD REQUIRED")
 
+                    # wait for password
                     password_raw = connection_stream.readline()
                     if not password_raw:
                         # Client never sent password? Skip this command
@@ -103,9 +103,9 @@ def handle_client(conn: socket.socket, addr):
                     show_client_message(password)  # print the sent password (requirement)
 
                     if password == 'QUIT': # Client unexpectedly quit
-                        send_line(connection_stream, 'QUIT')
+                        send_line(connection_stream, 'Connection terminated')
                         break
-                    if password == Shutdown_Password:
+                    if password == SHUTDOWN_PASSWORD:
                         send_line(connection_stream, "200 OKAY")
                         shutdown_event.set()
                         break  # break out and stop listening as the server will now stop
@@ -122,12 +122,12 @@ def handle_client(conn: socket.socket, addr):
 
 # Listens on the specified port forever
 def serve_forever(host, port):
-    # Use a timeout on accept so we can periodically check for shutdown_event
+
     with closing(socket.socket(socket.AF_INET, socket.SOCK_STREAM)) as s:
         s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         s.bind((host, port))
         s.listen(5)
-        s.settimeout(1.0)  # 1s accept timeout to poll shutdown_event
+        s.settimeout(1.0)  # 1s accept timeout to check shutdown_event
         print(f"YAMOTD server listening on {host}:{port}")
         print("Default message:", motd)
         try:
@@ -145,4 +145,4 @@ def serve_forever(host, port):
 
 # Entry-point:
 if __name__ == '__main__':
-    serve_forever(Host, Port)
+    serve_forever(HOST, SERVER_PORT)

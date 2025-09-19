@@ -8,8 +8,8 @@
 import socket
 import sys
 
-Server_Port = 5555
-Valid_Commands = "MSGGET | MSGSTORE | QUIT | SHUTDOWN" # Note that this is printed for the user rather than used in any control structure
+SERVER_PORT = 5555
+VALID_COMMANDS = "MSGGET | MSGSTORE | QUIT | SHUTDOWN" # Note that this is printed for the user rather than used in any control structure
 
 
 # Gets the next line from the server, and converts it into a string with \n and \r stripped
@@ -32,17 +32,17 @@ def send_line(connection_stream, line: str):
 
 # Called by the entry-point, this is where most of the "functionality" is defined
 def main():
-    if len(sys.argv) < 2:
+    if len(sys.argv) < 2: # missing command line parameter
         print("Server address must be passed as a command line parameter")
         sys.exit(1)
 
     host = sys.argv[1]
 
     try:
-        with socket.create_connection((host, Server_Port)) as sock:
+        with socket.create_connection((host, SERVER_PORT)) as sock: # attempt to connect to server
             connection_stream = sock.makefile('rwb', buffering=0)
-            print(f"Connected to {host}:{Server_Port}")
-            print("Enter one of: " + Valid_Commands)
+            print(f"Connected to {host}:{SERVER_PORT}")
+            print("Enter one of: " + VALID_COMMANDS)
 
             while True:
                 try:
@@ -60,7 +60,7 @@ def main():
                     send_line(connection_stream, 'MSGGET')
                     # Should receive "200 OK\nMOTD"
                     code = read_line(connection_stream)
-                    if not code:
+                    if not code: # null response, server must have closed
                         print("[Server closed]")
                         break
                     print(f"Server: {code}")
@@ -83,7 +83,7 @@ def main():
                             new_message = input("Enter new message of the day: ")
                         except (EOFError, KeyboardInterrupt):  # This will automatically send the QUIT command to the server in the event that client is aborted or has error.
                             send_line(connection_stream, 'QUIT')
-                            break # stop listening, we told server that we quit
+                            break # stop listening, as we told the server that we quit
 
                         send_line(connection_stream, new_message)
 
@@ -108,8 +108,14 @@ def main():
                         break
                     print(f"Server: {code}")
 
+                    # Server response of 300 means that it's now waiting for the password
                     if code.upper().startswith('300'):
-                        password = input("Password: ")
+                        try:
+                            password = input("Password: ")
+                        except (EOFError, KeyboardInterrupt):  # This will automatically send the QUIT command to the server in the event that client is aborted or has error.
+                            send_line(connection_stream, 'QUIT')
+                            break # stop listening, we told server that we quit
+
                         send_line(connection_stream, password)
                         code = read_line(connection_stream)
                         if code:
@@ -123,7 +129,7 @@ def main():
                         pass
 
                 else:
-                    print("Unknown command. Use: " + Valid_Commands)
+                    print("Unknown command. Use: " + VALID_COMMANDS)
 
         print("Disconnected.")
     except ConnectionRefusedError as e:
