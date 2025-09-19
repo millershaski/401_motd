@@ -54,9 +54,9 @@ def main():
                 if not cmd:
                     continue  # null command, try again
 
-                upper = cmd.upper()
+                cmd = cmd.upper()
 
-                if upper == 'MSGGET':
+                if cmd == 'MSGGET':
                     send_line(connection_stream, 'MSGGET')
                     # Should receive "200 OK\nMOTD"
                     code = read_line(connection_stream)
@@ -68,7 +68,7 @@ def main():
                     if motd:
                         print(motd)
 
-                elif upper == 'MSGSTORE':
+                elif cmd == 'MSGSTORE':
                     send_line(connection_stream, 'MSGSTORE')
                     # Should receive "200OK"
                     code = read_line(connection_stream)
@@ -93,14 +93,14 @@ def main():
                     else:
                         print("Upload not authorized by server.")
 
-                elif upper == 'QUIT':
+                elif cmd == 'QUIT':
                     send_line(connection_stream, 'QUIT')
                     code = read_line(connection_stream)
                     if code:
                         print(f"Server: {code}")
                     break
 
-                elif upper == 'SHUTDOWN':
+                elif cmd == 'SHUTDOWN':
                     send_line(connection_stream, 'SHUTDOWN')
                     code = read_line(connection_stream)
                     if not code:
