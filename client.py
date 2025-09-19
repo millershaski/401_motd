@@ -9,6 +9,7 @@ import socket
 import sys
 
 Server_Port = 5555
+Valid_Commands = "MSGGET | MSGSTORE | QUIT | SHUTDOWN" # Note that this is printed for the user rather than used in any control structure
 
 
 # Gets the next line from the server, and converts it into a string with \n and \r stripped
@@ -40,7 +41,7 @@ def main():
     with socket.create_connection((host, Server_Port)) as sock:
         connection_stream = sock.makefile('rwb', buffering=0)
         print(f"Connected to {host}:{Server_Port}")
-        print("Enter one of: MSGGET | MSGSTORE | QUIT | SHUTDOWN")
+        print("Enter one of: " + Valid_Commands)
 
         while True:
             try:
@@ -116,7 +117,7 @@ def main():
                     pass
 
             else:
-                print("Unknown command. Use: MSGGET | MSGSTORE | QUIT | SHUTDOWN")
+                print("Unknown command. Use: " + Valid_Commands)
 
     print("Disconnected.")
 
