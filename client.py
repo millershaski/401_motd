@@ -29,6 +29,7 @@ def send_line(connection_stream, line: str):
     connection_stream.flush()
 
 
+# Called by the entry-point, this is where most of the "functionality" is defined
 def main():
     if len(sys.argv) < 2:
         print("Server address must be passed as a command line parameter")
