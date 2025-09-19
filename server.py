@@ -128,6 +128,7 @@ def serve_forever(host, port):
             while not shutdown_event.is_set():
                 try:
                     conn, addr = s.accept()
+                    print(f"A new client has connected via: {addr}")
                 except socket.timeout:  # note that this is triggered when the server timeout is reached, and used only to handle the shutdown event
                     continue
                 t = threading.Thread(target=handle_client, args=(conn, addr), daemon=True)
