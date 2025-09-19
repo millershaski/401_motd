@@ -29,3 +29,26 @@ Observed: Client displays useful error message for user.
 
 Case: Launch server then client with correct arguments
 Expected: Client connects to the server and server displays incoming client message.
+Observed: Client connects to the server and server displays incoming client message.
+
+Case: Launch server and client with correct arguments. Type invalid command to send to server.
+Expected: Client displays error to user and prevents command from being sent to server. Server has no client input (no incoming messages) in its log.
+Observed: Client displays error to user and prevents command from being sent to server. Server has no client input (no incoming messages) in its log.
+
+Case: Launch server and client with correct arguments. Send MSGGET command.
+Expected: Server displays incoming client message. Client displays current message of the day.
+Observed: Server displays incoming client message. Client displays current message of the day.
+
+Case: Launch server and client with correct arguments. Send MSGSTORE command, followed by new message of the day, followed by MSGGET command.
+Expected: Server displays all incoming client messages. The MSGGET command returns the new message rather than the default (or former) one.
+Observed: Server displays all incoming client messages. The MSGGET command returns the new message rather than the default (or former) one.
+
+
+Case: Launch server and client with correct arguments. Send MSGSTORE command, followed by closing the client
+Expected: Server displays all incoming client messages. The server receives a QUIT response from the client and disconnects the client.
+Observed: Server displays all incoming client messages. The server receives a QUIT response from the client and disconnects the client.
+
+Case: Launch server and client with correct arguments. Send QUIT command.
+Expected: Server displays all incoming client messages. The client outputs that it has been disconnected. No further commands can be sent to the server.
+Observed: Server displays all incoming client messages. The client outputs that it has been disconnected. No further commands can be sent to the server.
+
