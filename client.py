@@ -44,7 +44,7 @@ def main():
         while True:
             try:
                 cmd = input("yamotd> ").strip()
-            except (EOFError, KeyboardInterrupt):
+            except (EOFError, KeyboardInterrupt):  # This will automatically send the QUIT command to the server in the event that client is aborted or has error.
                 cmd = "QUIT"
                 print()
 
