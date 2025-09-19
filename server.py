@@ -79,6 +79,9 @@ def handle_client(conn: socket.socket, addr):
 
                     new_message = raw_byte_to_string(new_line_raw)
                     show_client_message(new_message)  # print the new message (requirement)
+                    if new_message == 'QUIT': # Client unexpectedly quit
+                        send_line(connection_stream, 'QUIT')
+                        break
 
                     with motd_lock:
                         motd = new_message
@@ -99,6 +102,9 @@ def handle_client(conn: socket.socket, addr):
                     password = raw_byte_to_string(password_raw)
                     show_client_message(password)  # print the sent password (requirement)
 
+                    if password == 'QUIT': # Client unexpectedly quit
+                        send_line(connection_stream, 'QUIT')
+                        break
                     if password == Shutdown_Password:
                         send_line(connection_stream, "200 OKAY")
                         shutdown_event.set()

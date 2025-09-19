@@ -38,88 +38,96 @@ def main():
 
     host = sys.argv[1]
 
-    with socket.create_connection((host, Server_Port)) as sock:
-        connection_stream = sock.makefile('rwb', buffering=0)
-        print(f"Connected to {host}:{Server_Port}")
-        print("Enter one of: " + Valid_Commands)
+    try:
+        with socket.create_connection((host, Server_Port)) as sock:
+            connection_stream = sock.makefile('rwb', buffering=0)
+            print(f"Connected to {host}:{Server_Port}")
+            print("Enter one of: " + Valid_Commands)
 
-        while True:
-            try:
-                cmd = input("yamotd> ").strip()
-            except (EOFError, KeyboardInterrupt):  # This will automatically send the QUIT command to the server in the event that client is aborted or has error.
-                cmd = "QUIT"
-                print()
+            while True:
+                try:
+                    cmd = input("Enter Command: ").strip()
+                except (EOFError, KeyboardInterrupt):  # This will automatically send the QUIT command to the server in the event that client is aborted or has error.
+                    cmd = "QUIT"
+                    print()
 
-            if not cmd:
-                continue  # null command, try again
+                if not cmd:
+                    continue  # null command, try again
 
-            upper = cmd.upper()
+                upper = cmd.upper()
 
-            if upper == 'MSGGET':
-                send_line(connection_stream, 'MSGGET')
-                # Should receive "200 OK\nMOTD"
-                code = read_line(connection_stream)
-                if not code:
-                    print("[Server closed]")
-                    break
-                print(code)
-                motd = read_line(connection_stream)
-                if motd:
-                    print(motd)
-
-            elif upper == 'MSGSTORE':
-                send_line(connection_stream, 'MSGSTORE')
-                # Should receive "200OK"
-                code = read_line(connection_stream)
-                if not code:
-                    print("[Server closed]")
-                    break
-                print(code)
-
-                # Server has authorized MSGSTORE, so now get and send the new MOTD
-                if code.upper().startswith('200'):
-                    new_message = input("Enter new message of the day: ")
-                    send_line(connection_stream, new_message)
-
-                    # If MOTD was correctly saved, we should receive a 200
+                if upper == 'MSGGET':
+                    send_line(connection_stream, 'MSGGET')
+                    # Should receive "200 OK\nMOTD"
                     code = read_line(connection_stream)
-                    print(code)
-                else:
-                    print("Upload not authorized by server.")
+                    if not code:
+                        print("[Server closed]")
+                        break
+                    print(f"Server: {code}")
+                    motd = read_line(connection_stream)
+                    if motd:
+                        print(motd)
 
-            elif upper == 'QUIT':
-                send_line(connection_stream, 'QUIT')
-                code = read_line(connection_stream)
-                if code:
-                    print(code)
-                break
+                elif upper == 'MSGSTORE':
+                    send_line(connection_stream, 'MSGSTORE')
+                    # Should receive "200OK"
+                    code = read_line(connection_stream)
+                    if not code:
+                        print("[Server closed]")
+                        break
+                    print(f"Server: {code}")
 
-            elif upper == 'SHUTDOWN':
-                send_line(connection_stream, 'SHUTDOWN')
-                code = read_line(connection_stream)
-                if not code:
-                    print("[Server closed]")
-                    break
-                print(code)
+                    # Server has authorized MSGSTORE, so now get and send the new MOTD
+                    if code.upper().startswith('200'):
+                        try:
+                            new_message = input("Enter new message of the day: ")
+                        except (EOFError, KeyboardInterrupt):  # This will automatically send the QUIT command to the server in the event that client is aborted or has error.
+                            send_line(connection_stream, 'QUIT')
+                            break # stop listening, we told server that we quit
 
-                if code.upper().startswith('300'):
-                    password = input("Password: ")
-                    send_line(connection_stream, password)
+                        send_line(connection_stream, new_message)
+
+                        # If MOTD was correctly saved, we should receive a 200
+                        code = read_line(connection_stream)
+                        print(code)
+                    else:
+                        print("Upload not authorized by server.")
+
+                elif upper == 'QUIT':
+                    send_line(connection_stream, 'QUIT')
                     code = read_line(connection_stream)
                     if code:
-                        print(code)
+                        print(f"Server: {code}")
+                    break
 
-                        # If 200, then server will be closing, so we (the client) can also stop listening
-                        if code.upper().startswith('200'):
-                            break
+                elif upper == 'SHUTDOWN':
+                    send_line(connection_stream, 'SHUTDOWN')
+                    code = read_line(connection_stream)
+                    if not code:
+                        print("[Server closed]")
+                        break
+                    print(f"Server: {code}")
+
+                    if code.upper().startswith('300'):
+                        password = input("Password: ")
+                        send_line(connection_stream, password)
+                        code = read_line(connection_stream)
+                        if code:
+                            print(f"Server: {code}")
+
+                            # If 200, then server will be closing, so we (the client) can also stop listening
+                            if code.upper().startswith('200'):
+                                break
+                    else:
+                        # Server rejected the command unexpectedly
+                        pass
+
                 else:
-                    # Server rejected the command unexpectedly
-                    pass
+                    print("Unknown command. Use: " + Valid_Commands)
 
-            else:
-                print("Unknown command. Use: " + Valid_Commands)
-
-    print("Disconnected.")
+        print("Disconnected.")
+    except ConnectionRefusedError as e:
+        print(f"Connection refused, is the server running?: {e}")
 
 
 # Entry-point
